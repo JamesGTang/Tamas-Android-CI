@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import tamas.ecse321.ca.tamas.controller.ApplicantController;
+import tamas.ecse321.ca.tamas.controller.ApplicationController;
+
 public class apply_for_job extends AppCompatActivity {
     Button apply_to_job;
     Button goBack;
@@ -49,6 +52,10 @@ public class apply_for_job extends AppCompatActivity {
     String jobInfo;
     private String user_id;
     private String pass_word;
+
+    ApplicantController applicantController;
+    ApplicationController applicationController;
+    Map<String,String> applicantInfo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,7 +91,22 @@ public class apply_for_job extends AppCompatActivity {
         }
 
         personal_information_textview = (TextView) findViewById(R.id.personal_information_textview);
-        getStudentRecordByID();
+        applicantController=new ApplicantController();
+        applicantInfo= applicantController.getApplicantRecordById(pass_word,user_id);
+        if(applicantInfo!=null){
+            applicant_id=applicantInfo.get("applicant_id");
+            applicant_fname=applicantInfo.get("applicant_fname");
+            applicant_lname=applicantInfo.get("applicant_lname");
+            applicant_email=applicantInfo.get("applicant_email");
+            status=applicantInfo.get("applicant_status");
+
+            String applicantInfo="Please verify your information below:\n" + "First Name: "+applicant_fname+"\n"
+                    +"Last Name: "+applicant_lname+ "\n"+"Email: "+applicant_email+ "\n"+"Status: "+status+ "\n";
+            personal_information_textview.setText(applicantInfo);
+
+        }else{
+            personal_information_textview.setText("Unable to fetch applicant information, please make sure your device has good internet connection!");
+        }
 
 
         job_posting_textview = (TextView) findViewById(R.id.job_information_textview);
@@ -118,92 +140,31 @@ public class apply_for_job extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
-                personal_information_textview.setText("Email is: "+applicant_email);
-                submitJobApplication(v);
-            }
-        });
-
-    }
-
-    public void submitJobApplication(View v) {
-        String urlForID = "http://www.jamesgtang.com/tamas/submitJobAppplicationService.php";
-        RequestQueue queue = Volley.newRequestQueue(this);
-        applicant_cv = cv_field.getText().toString();
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, urlForID, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                personal_information_textview.setText("");
-                job_posting_textview.setTextColor(Color.parseColor("#C63D0F"));
-                job_posting_textview.setTextSize(18);
-                job_posting_textview.setText("Submission success! You can now logout or go back and apply for another job!");
-            }
-        }, new Response.ErrorListener() {
-
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                // Error handling
-                System.out.println("Something went wrong!");
-                job_posting_textview.setText("Unable to submit!Try again in a moment.");
-                error.printStackTrace();
-            }
-        }
-        ) {
-            @Override
-            protected Map<String, String> getParams() {
-                Map<String, String> params = new HashMap<>();
-                // the POST parameters:
-                params.put("JOB_POSTING_ID", job_posting_id);
-                params.put("APPLICANT_FNAME", applicant_fname);
-                params.put("APPLICANT_LNAME", applicant_lname);
-                params.put("APPLICANT_EMAIL", applicant_email);
-                params.put("STATUS", status);
-                params.put("CV", applicant_cv);
-                return params;
-            }
-        };
-        queue.add(stringRequest);
-
-    }
-
-    public int getStudentRecordByID(){
-        // clear all exsiting entrie
-        RequestQueue queue= Volley.newRequestQueue(this);
-        String urlForID="http://www.jamesgtang.com/tamas/studentRecordService.php?user_id="+user_id+"&user_password="+pass_word;
-
-        StringRequest stringRequest=new StringRequest(Request.Method.GET,urlForID,new Response.Listener<String>(){
-            @Override
-            public void onResponse(String response) {
-                try {
-                    // use JSON Parser to tokenize dataS
-                    JSONArray listing=new JSONArray(response);
-
-                        JSONObject c=listing.getJSONObject(0);
-                        applicant_fname=c.getString("FNAME");
-                        applicant_lname=c.getString("LNAME");
-                        status=c.getString("STATUS");
-                        applicant_email=c.getString("EMAIL");
-
-                    String studentInfo="Please verify your information below:\n" + "First Name: "+applicant_fname+"\n"
-                            +"Last Name: "+applicant_lname+ "\n"+"Email: "+applicant_email+ "\n"+"Status: "+status+ "\n";
-                    personal_information_textview.setText(studentInfo);
-
-                }catch (JSONException e){
-                    e.printStackTrace();
+                applicant_cv = cv_field.getText().toString();
+                applicationController=new ApplicationController(applicant_cv,job_posting_id,applicant_fname,applicant_lname,applicant_email,status);
+                String feedback;
+                feedback=applicantController.vertifyApplicantInformation();
+                if(feedback.equals("Verified!")){
+                    if(applicationController.submitApplication().equals("Update Success!")){
+                        job_posting_textview.setTextColor(Color.parseColor("#C63D0F"));
+                        job_posting_textview.setTextSize(18);
+                        job_posting_textview.setText("Submission success! You can now logout or go back and apply for another job!");
+                    }else{
+                        job_posting_textview.setTextColor(Color.parseColor("#C63D0F"));
+                        job_posting_textview.setText("Unable to submit!Try again in a moment.");
+                    }
+                }else{
+                    job_posting_textview.setText("feedback");
                 }
-                // handle response here
-            }
-        }, new Response.ErrorListener() {
+                personal_information_textview.setText("");
 
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                // Error handling
-                System.out.println("Something went wrong!Unable to fetch record");
-                error.printStackTrace();
             }
         });
-        queue.add(stringRequest);
-        return 0;
 
     }
+
+
+
+
 }
 

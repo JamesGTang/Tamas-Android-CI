@@ -17,15 +17,17 @@
         android:textColor="@color/purewhite"
         android:fontFamily="sans-serif-medium"
         android:text="@string/tamas"
+        android:id="@+id/textView"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:id="@+id/textView" />
+        android:layout_marginTop="25dp" />
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/textforwelcomescreen"
         android:textSize="13dp"
         android:textColor="@color/purewhite"
+        android:id="@+id/textView2"
         android:layout_below="@+id/textView"
         android:layout_centerHorizontal="true" />
     <Button
@@ -33,29 +35,17 @@
         android:layout_height="80dp"
         android:text="@string/signin"
         android:id="@+id/signin_button"
-        android:layout_above="@+id/register_button"
-        android:layout_centerHorizontal="true"
         android:onClick="switchToSigninView"
-        />
+        android:layout_below="@+id/textView2"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="60dp" />
     <Button
         android:layout_width="200dp"
         android:layout_height="80dp"
         android:text="@string/register"
-        android:layout_centerVertical="true"
-        android:layout_alignLeft="@+id/signin_button"
-        android:layout_alignStart="@+id/signin_button"
         android:id="@+id/register_button"
-        android:onClick="switchToRegisterView"/>
-    <Button
-        android:layout_width="200dp"
-        android:layout_height="80dp"
-        android:layout_below="@+id/register_button"
-        android:text="@string/jobApplication"
-        android:layout_centerVertical="true"
-        android:layout_alignLeft="@+id/signin_button"
-        android:layout_alignStart="@+id/signin_button"
-        android:id="@+id/apply_to_job"
-        android:onClick="switchToApplicationSubmitView"
-        />
+        android:onClick="switchToRegisterView"
+        android:layout_below="@+id/signin_button"
+        android:layout_centerHorizontal="true" />
 
 </RelativeLayout>

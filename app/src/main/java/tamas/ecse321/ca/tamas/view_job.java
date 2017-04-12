@@ -4,29 +4,20 @@ import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
+
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import tamas.ecse321.ca.tamas.controller.JobController;
+import tamas.ecse321.ca.tamas.util.PersistenceChangeObserver;
 
 public class view_job extends AppCompatActivity {
 
@@ -40,6 +31,11 @@ public class view_job extends AppCompatActivity {
 
     private String user_id;
     private String pass_word;
+
+    JobController jobController;
+    LinkedList<String> jobList;
+
+    PersistenceChangeObserver persistenceChangeObserver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +53,7 @@ public class view_job extends AppCompatActivity {
         }
 
         listview=(ListView)findViewById(R.id.list_of_job);
-        String preRefreshItem[]=new String[]{"Hello","Please Refresh One or two times to See list of Jobs Available"};
+        String preRefreshItem[]=new String[]{"Hello Applicant!","Please Refresh One or two times to See list of Jobs Available"};
         listItems=new ArrayList<String>();
         feedback_textview=(TextView) findViewById(R.id.feedback_textview);
         for(int i=0;i<preRefreshItem.length;i++){
@@ -71,17 +67,27 @@ public class view_job extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 adapter.clear();
-                getAllJobPosting();
+                jobController=new JobController();
+                jobList=jobController.getAllJobPosting();
+                if(jobList!=null){
+                    Iterator<String> jobIterator=jobList.iterator();
+                    while (jobIterator.hasNext()){
+                        adapter.add(jobIterator.next());
+                    }
+                }else{
+                    feedback_textview.setText("No jobs are avialble at the moment, or unable to fetch job from database at the moment");
+                }
                 adapter.notifyDataSetChanged();
-
             }
         });
+
+
 
         select_job_button=(Button)findViewById(R.id.select_job_button);
         select_job_button.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                // Todo handle null string non selected exception
+
                 setContentView(R.layout.activity_apply_for_job);
                 Intent intent=new Intent(view_job.this,apply_for_job.class);
                 intent.putExtra("selectedItem",selectedItem);
@@ -98,53 +104,37 @@ public class view_job extends AppCompatActivity {
                 feedback_textview.setText("You selected: "+selectedItem);
             }
         });
-    }
 
-    public int getAllJobPosting(){
-        // clear all exsiting entries
-        adapter.clear();
 
-        RequestQueue queue= Volley.newRequestQueue(this);
-        String urlForID="http://www.jamesgtang.com/tamas/jobPostingService.php";
+        Thread observerAcitivty =new Thread(new Runnable() {
 
-        StringRequest stringRequest=new StringRequest(Request.Method.GET,urlForID,new Response.Listener<String>(){
             @Override
-            public void onResponse(String response) {
+            public void run() {
                 try {
-                    // use JSON Parser to tokenize data
-                    JSONArray listing=new JSONArray(response);
-                    for(int i=0;i<listing.length();i++){
-                        JSONObject c=listing.getJSONObject(i);
-                        String instructor_name=c.getString("INSTRUCTOR_NAME");
-                        String course_name=c.getString("COURSE");
-                        String post_id=c.getString("POST_ID");
-                        String hour=c.getString("HOUR");
-                        adapter.add("Post_ID: "+post_id+" Course: "+course_name+ " Hour: "+hour
-                                +" Instructor_Name: "+instructor_name);
-
-                        HashMap<String, String> map=new HashMap<String,String>();
-                        map.put("INSTRUCTOR_NAME",instructor_name);
-                        map.put("COURSE_NAME",course_name);
-                        map.put("POST_ID",post_id);
-                        map.put("HOUR",hour);
-
+                    Thread.sleep(5000);
+                    if (!persistenceChangeObserver.observe(adapter)) {
+                        jobList.clear();
+                        adapter.clear();
+                        adapter.add("New Job has been posted! They are updated automatically!");
+                        jobList = jobController.getAllJobPosting();
+                        if (jobList != null) {
+                            Iterator<String> jobIterator = jobList.iterator();
+                            while (jobIterator.hasNext()) {
+                                adapter.add(jobIterator.next());
+                            }
+                        } else {
+                            feedback_textview.setText("No jobs are avialble at the moment, or unable to fetch job from database at the moment");
+                        }
                     }
-                }catch (JSONException e){
+                } catch (InterruptedException e) {
+                    System.out.println("Observer thread failed!");
                     e.printStackTrace();
                 }
-                // handle response here
-            }
-        }, new Response.ErrorListener() {
-
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                // Error handling
-                System.out.println("Something went wrong!");
-                error.printStackTrace();
             }
         });
-        queue.add(stringRequest);
-        return 0;
 
+        observerAcitivty.start();
     }
+
+
 }
